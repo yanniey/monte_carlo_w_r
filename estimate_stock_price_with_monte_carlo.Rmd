@@ -1,0 +1,45 @@
+---
+title: "Use Monte Carlo to estimate random walk of stock prices"
+output: html_document
+---
+
+```{r}
+calculate_random_walk<-function(n_periods) {
+  random_change <-sample(c(-1,1), n_periods,replace=TRUE)
+  cumsum(random_change) # current value
+}
+
+N_PERIODS <- 365
+runs <-1000
+df <-data.frame("period" = 1:N_PERIODS)
+
+for (i in 1:runs){
+  df[,i+1] <-calculate_random_walk(N_PERIODS)
+}
+
+head(df) # each column represent a run
+
+plot_df <- df %>% 
+  gather("series","cumsum",-period)
+
+head(plot_df)
+
+```
+
+```{r}
+plot_df %>% 
+  ggplot(aes(x=period,y=cumsum,color = series)) + geom_line() +
+  theme(legend.position="none")
+```
+
+```{r}
+mean_values <-data.frame("period" = df[,1],
+                        mean_value = rowMeans(df[,-1]))
+tail(mean_values)
+```
+
+```{r}
+mean_values %>%
+  ggplot(aes(x=period,y=mean_value)) + 
+  geom_line()
+```

@@ -1,0 +1,113 @@
+---
+title: "two_sample_t_test"
+output: html_document
+---
+# Summary
+1. Use f-test (variance test) to see if variance is similar between the two samples. 
+  * If variance is the same (p > 0.05), it means that we can use t-test to check if the means of the samples are the same.
+  * If variance is not the same, it means that we don't have enough data OR that the variance of the two samples are not the same, which means that we cannot use t-test.
+    * This is when Monte Carlo may be useful, i.e. not having enough data
+  
+2. Use chi-squared test for A/B testing
+
+3. Beta distribution & Dirichlet distribution for Monte Carlo
+  * Beta distribution is for binary discrete events (e.g. user clicked vs. didn't click on ads). Use beta distribution when there are only 2 potential outcomes.
+  * Dirichlet distribution is the multidimensional generalisation of the beta distribution. Use Dirichlet distribution when > 2 outcomes
+  
+  
+4. Add Bayesian prior before running Monte Carlo
+  
+## 1. F-test and t-test
+```{r}
+sample_1 <-rnorm(10000)
+sample_2 <-rnorm(10000)
+
+var.test(sample_1, sample_2) # f-test
+```
+
+```{r}
+t.test(sample_1,sample_2)
+```
+
+```{r}
+sample_1 <-rnorm(10000)
+sample_2 <-runif(10000)
+
+var.test(sample_1,sample_2)
+t.test(sample_1,sample_2)
+```
+
+## 2. chi-squared test for A/B testing
+`chisq.test(x,y)` where:
+x = vector of control group
+y = vector of outcomes associated with x
+x and y must be same length
+```{r}
+df<-read.csv("https://goo.gl/j6lRXD")
+head(df)
+```
+
+## 3. Beta Distribution in Monte Carlo
+Use it for binary discrete events. 
+
+`rbeta(runs, shape1,shape2)` where:
+* shape1 = one outcome (e.g. "clicked")
+* shape2 = another outcome (e.g. "not clicked")
+```{r}
+runs <- 1000
+experiment_1<-rbeta(runs, shape1, shape2)
+experiment_2<-rbeta(runs, shape1, shape2)
+```
+
+## 4. Dirichlet Distribtion
+Dirichlet Distribution is the multidimensional generalization of the beta distribution. 
+a = vector for one outcome, b = vector for another outcome, etc. 
+
+```{r}
+runs<-100
+experiment_1 <-rdirichlet(runs,alpha=c(a,b,n))
+experiment_2 <-rdirichlet(runs,alpha=c(a,b,n))
+```
+
+binary A/B testing with categorical outcomes
+
+Raw table's format:
+
+|Index|model version| performance improved (yes/no)
+|1    | 1           | yes                    |
+|2    | 1           | no                     |
+|3    | 2           | yes                    |
+|4    | 2           | no                     | 
+
+
+Aggregated table's format:
+
+|Model Version| Improved    | Didn't improve |
+|1            | 30          | 36             |
+|2            | 12          | 10             |
+
+```{r}
+runs<-10000
+model_1<-rbeta(runs,30,36) # 30 is number of rows where things are improved, 36 is the number of rows where things did not improve for model 1
+model_2<-rbeta(runs,12,10) 
+
+perc_model1_superior<-sum(model_1>model_2) /runs
+perc_model1_superior
+```
+
+
+## 5. Add a Bayesian prior into Beta Distribution
+`rbeta(runs,shape1+prior1,shape2+prior2)` 
+
+```{r}
+runs<-1000
+
+alpha_prior<-15
+beta_prior<-18
+
+model_1 <-rbeta(runs, 30 + alpha_prior, 36 + beta_prior)
+model_2 <-rbeta(runs, 12 + alpha_prior, 10 + beta_prior)
+
+prob_model1_is_superior <- sum(model_1>model_2)/runs
+prob_model1_is_superior
+```

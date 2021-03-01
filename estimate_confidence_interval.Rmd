@@ -1,0 +1,66 @@
+---
+title: "Point Estimate and Confidence Intervals"
+output: html_document
+---
+
+```{r}
+calculate_random_walk<-function(n_periods) {
+  random_change <-sample(c(-1,1), n_periods,replace=TRUE)
+  cumsum(random_change) # current value
+}
+
+N_PERIODS <- 365
+runs <-1000
+df <-data.frame("period" = 1:N_PERIODS)
+
+for (i in 1:runs){
+  df[,i+1] <-calculate_random_walk(N_PERIODS)
+}
+
+calculate_ci <- function(row){
+    id<-row[1]
+    row <- as.numeric(row[-1])
+    summarised <- summary(row)
+    c(id,summarised[2:5]) # 25th percentile, mean, median, 75th percentile
+}
+
+```
+
+```{r}
+
+results <- apply(df,1,calculate_ci)
+head(results)
+results <-data.frame(t(results)) # transpose results
+head(results)
+
+results %>% 
+  select(-Mean) %>% # remove the mean column, keep the median
+  gather("series","value",-period) %>%  # key = series, value = value, remove period column
+  ggplot(aes(x=period,y=value, color = series)) + geom_line()
+
+```
+Run the same on test set
+
+```{r}
+runs <-1000
+test_df <-data.frame("period" = 1:N_PERIODS)
+
+for (i in 1:runs){
+ test_df[,i+1] <-calculate_random_walk(N_PERIODS)
+}
+
+test_period <-68 # randomly choose 68 days, could be any number
+
+results %>% filter(period ==test_period)
+
+test_values <- test_df %>%
+  filter(period == test_period) %>%
+  select(-period) %>%
+  as.numeric
+
+head(test_values,50)
+
+(test_values > -6) & (test_values < 6)
+sum(((test_values > -6) & (test_values < 6))) / runs # return a percentage figure of how likely the value will fall within the range
+
+```
